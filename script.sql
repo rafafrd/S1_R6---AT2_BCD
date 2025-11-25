@@ -1,0 +1,189 @@
+CREATE DATABASE IF NOT EXISTS tecmarket;
+USE tecmarket;
+
+-- Tabela CARGO
+CREATE TABLE IF NOT EXISTS cargo (
+    id_cargo INT PRIMARY KEY AUTO_INCREMENT,
+    dc_cargo VARCHAR(70) NOT NULL,
+    id_user INT
+);
+
+-- Tabela USUARIOS
+CREATE TABLE IF NOT EXISTS usuarios (
+    id_user INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(100) NOT NULL,
+    rua VARCHAR(150),
+    numero VARCHAR(10),
+    bairro VARCHAR(100),
+    CEP VARCHAR(8),
+    id_cargo INT,
+    FOREIGN KEY (id_cargo) REFERENCES cargo(id_cargo)
+);
+
+-- Adiciona a FK pq tava criando dependencia
+ALTER TABLE cargo
+ADD CONSTRAINT fk_cargo_usuario
+FOREIGN KEY (id_user) REFERENCES usuarios(id_user);
+
+-- Tabela TELEFONE
+CREATE TABLE IF NOT EXISTS telefone (
+    id_telefone INT PRIMARY KEY AUTO_INCREMENT,
+    telefone VARCHAR(20) NOT NULL,
+    id_user INT,
+    FOREIGN KEY (id_user) REFERENCES usuarios(id_user)
+);
+
+-- Tabela PEDIDO
+CREATE TABLE IF NOT EXISTS pedido (
+    id_pedido INT PRIMARY KEY AUTO_INCREMENT,
+    dt_pedido TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    id_user INT,
+    vl_total DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (id_user) REFERENCES usuarios(id_user)
+);
+
+-- Tabela PRODUTO
+CREATE TABLE IF NOT EXISTS produto (
+    id_produto INT PRIMARY KEY AUTO_INCREMENT,
+    dc_produto VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    vl_produto DECIMAL(10, 2) NOT NULL,
+    qntd_estoque INT NOT NULL
+);
+
+-- Tabela ITENS_PEDIDO (Tabela Associativa)
+CREATE TABLE IF NOT EXISTS itens_pedido (
+    id_pedido INT,
+    id_produto INT,
+    qntd_produto INT NOT NULL,
+    vl_item_produto DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (id_pedido, id_produto),
+    FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido),
+    FOREIGN KEY (id_produto) REFERENCES produto(id_produto)
+);
+
+-- Tabela CATEGORIA
+CREATE TABLE IF NOT EXISTS categoria (
+    id_categoria INT PRIMARY KEY AUTO_INCREMENT,
+    dc_categoria VARCHAR(100) NOT NULL,
+    id_produto INT,
+    FOREIGN KEY (id_produto) REFERENCES produto(id_produto)
+);
+
+-- Tabela FORNECEDOR
+CREATE TABLE IF NOT EXISTS fornecedor (
+    id_fornecedor INT PRIMARY KEY AUTO_INCREMENT,
+    dc_fornecedor VARCHAR(100) NOT NULL,
+    id_produto INT,
+    FOREIGN KEY (id_produto) REFERENCES produto(id_produto)
+);
+
+
+-- popular tabelas
+
+-- add cargo com null primeiro para evitar erro de fk
+INSERT INTO cargo (dc_cargo, id_user) VALUES
+('Atendente', NULL), -- id 1
+('Gerente', NULL),   -- id 2
+('Caixa', NULL);     -- id 3
+
+-- add users (referenciando os cargos criados)
+INSERT INTO usuarios (nome, rua, numero, bairro, CEP, id_cargo) VALUES
+('Ana Silva', 'Rua A', '123', 'Bairro X', '12345678', NULL), -- Cliente
+('Bruno Souza', 'Rua B', '456', 'Bairro Y', '23456789', NULL), -- Cliente
+('Carla Mendes', 'Rua C', '789', 'Bairro Z', '34567890', 1), -- Atendente
+('Daniel Oliveira', 'Rua D', '101', 'Bairro W', '45678901', 2), -- Gerente
+('Eva Costa', 'Rua E', '202', 'Bairro V', '56789012', NULL), -- Cliente
+('Fábio Lima', 'Rua F', '303', 'Bairro U', '67890123', 3); -- Caixa
+
+-- att a tabela CARGO para dizer quem ocupa aquele cargo
+UPDATE cargo SET id_user = 3 WHERE id_cargo = 1; -- Atendente
+UPDATE cargo SET id_user = 4 WHERE id_cargo = 2; -- Gerente
+UPDATE cargo SET id_user = 6 WHERE id_cargo = 3; -- Caixa
+
+-- Telefones
+INSERT INTO telefone (telefone, id_user) VALUES
+('11987654321', 1),
+('21976543210', 2),
+('31965432109', 3),
+('41954321098', 4),
+('51943210987', 5);
+
+-- Produtos - tem que vir antes para nao bugar
+INSERT INTO produto (dc_produto, descricao, vl_produto, qntd_estoque) VALUES
+('Notebook Gamer', 'Notebook potente', 5500.00, 10),    -- id 1
+('Smartphone Azul', 'Câmera alta resolução', 1500.00, 25), -- id 2
+('Tablet DEF', 'Tablet leve', 1200.00, 15),           -- id 3
+('Monitor GHI', 'Monitor 4K', 2000.00, 8);            -- id 4
+
+-- Categorias e Fornecedores
+INSERT INTO categoria (dc_categoria, id_produto) VALUES
+('Eletrônicos', 1), ('Celulares', 2), ('Tablets', 3), ('Monitores', 4);
+
+INSERT INTO fornecedor (dc_fornecedor, id_produto) VALUES
+('Tech Distributors Inc.', 1), ('Gadget World', 2), ('Tablet Suppliers Co.', 3), ('Display Masters Ltd.', 4);
+
+-- Pedidos 
+INSERT INTO pedido (id_user, vl_total) VALUES
+(1, 12500.00), -- id 1
+(2, 1500.00),  -- id 2
+(1, 10000.00), -- id 3
+(3, 3000.00);  -- id 4
+
+-- associativa
+INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) VALUES
+(1, 1, 2, 11000.00),
+(2, 2, 1, 1500.00),
+(3, 1, 1, 5500.00),
+(3, 4, 1, 2000.00),
+(4, 3, 2, 2400.00);
+
+
+-- Procedures
+-- ==============================================
+DELIMITER $$
+CREATE PROCEDURE CadastrarProduto (
+    IN p_dc_produto VARCHAR(100),
+    IN p_descricao TEXT,
+    IN p_vl_produto DECIMAL(10, 2),
+    IN p_qntd_estoque INT
+)
+BEGIN
+    INSERT INTO produto (dc_produto, descricao, vl_produto, qntd_estoque)
+    VALUES (p_dc_produto, p_descricao, p_vl_produto, p_qntd_estoque);
+END $$
+DELIMITER ;
+
+-- Procedure: Relatório Vendas
+DELIMITER $$
+CREATE PROCEDURE RelatorioVendasPorData (
+    IN p_data_inicio DATE,
+    IN p_data_fim DATE
+)
+BEGIN
+    SELECT p.id_pedido, p.dt_pedido, u.nome AS cliente, p.vl_total
+    FROM pedido p
+    JOIN usuarios u ON p.id_user = u.id_user
+    WHERE DATE(p.dt_pedido) BETWEEN p_data_inicio AND p_data_fim;
+END $$
+DELIMITER ;
+
+-- Function: Calcular Valor Total
+DELIMITER $$
+CREATE FUNCTION CalcularValorTotalVenda (
+    p_id_pedido INT
+) 
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE total DECIMAL(10, 2);
+
+    -- Correção: Usar INTO para atribuir o valor à variável
+    SELECT SUM(vl_item_produto) INTO total
+    FROM itens_pedido
+    WHERE id_pedido = p_id_pedido;
+    
+    -- Retorna 0 se for nulo (caso não tenha itens)
+    RETURN COALESCE(total, 0.00);
+END $$
+DELIMITER ;
