@@ -4,8 +4,7 @@ USE tecmarket;
 -- Tabela CARGO
 CREATE TABLE IF NOT EXISTS cargo (
     id_cargo INT PRIMARY KEY AUTO_INCREMENT,
-    dc_cargo VARCHAR(70) NOT NULL,
-    id_user INT
+    dc_cargo VARCHAR(70) NOT NULL
 );
 
 -- Tabela USUARIOS
@@ -19,11 +18,6 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id_cargo INT,
     FOREIGN KEY (id_cargo) REFERENCES cargo(id_cargo)
 );
-
--- Adiciona a FK pq tava criando dependencia
-ALTER TABLE cargo
-ADD CONSTRAINT fk_cargo_usuario
-FOREIGN KEY (id_user) REFERENCES usuarios(id_user);
 
 -- Tabela TELEFONE
 CREATE TABLE IF NOT EXISTS telefone (
@@ -82,10 +76,10 @@ CREATE TABLE IF NOT EXISTS fornecedor (
 -- popular tabelas
 
 -- add cargo com null primeiro para evitar erro de fk
-INSERT INTO cargo (dc_cargo, id_user) VALUES
-('Atendente', NULL), -- id 1
-('Gerente', NULL),   -- id 2
-('Caixa', NULL);     -- id 3
+INSERT INTO cargo (dc_cargo) VALUES
+('Atendente'), -- id 1
+('Gerente'),   -- id 2
+('Caixa');     -- id 3
 
 -- add users (referenciando os cargos criados)
 INSERT INTO usuarios (nome, rua, numero, bairro, CEP, id_cargo) VALUES
@@ -96,10 +90,11 @@ INSERT INTO usuarios (nome, rua, numero, bairro, CEP, id_cargo) VALUES
 ('Eva Costa', 'Rua E', '202', 'Bairro V', '56789012', NULL), -- Cliente
 ('Fábio Lima', 'Rua F', '303', 'Bairro U', '67890123', 3); -- Caixa
 
--- att a tabela CARGO para dizer quem ocupa aquele cargo
-UPDATE cargo SET id_user = 3 WHERE id_cargo = 1; -- Atendente
-UPDATE cargo SET id_user = 4 WHERE id_cargo = 2; -- Gerente
-UPDATE cargo SET id_user = 6 WHERE id_cargo = 3; -- Caixa
+-- SELECT nome,
+--     COALESCE(dc_cargo,"Cliente") AS cargo
+-- FROM usuarios
+-- LEFT JOIN cargo 
+-- ON usuarios.id_cargo = cargo.id_cargo;
 
 -- Telefones
 INSERT INTO telefone (telefone, id_user) VALUES
@@ -141,6 +136,7 @@ INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) 
 
 -- Procedures
 -- ==============================================
+-- Crie um Stored Procedure para cadastrar produtos;
 DELIMITER $$
 CREATE PROCEDURE CadastrarProduto (
     IN p_dc_produto VARCHAR(100),
