@@ -211,3 +211,15 @@ END $$
 DELIMITER ;
 
 SELECT CalcularDescontoProduto(2000.00, 10) AS desconto;
+
+-- Crie um trigger para atualizar o esqoque quando um item de venda for inserido;
+DELIMITER $$
+CREATE TRIGGER trg_atualiza_estoque
+AFTER INSERT ON itens_pedido
+FOR EACH ROW
+BEGIN
+    UPDATE produto
+    SET qntd_estoque = qntd_estoque - NEW.qntd_produto
+    WHERE id_produto = NEW.id_produto;
+END $$
+DELIMITER ;
