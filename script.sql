@@ -138,24 +138,30 @@ DELIMITER ;
 
 -- 6 - Crie um evento (EVENT SCHEDULER) que gere diariamente uma tabela de log de estoque;
 
--- CREATE TABLE IF NOT EXISTS tabela_log
---     id_produto_log INT PRIMARY KEY AUTO_INCREMENT,
---     dc_produto_log VARCHAR(100) NOT NULL,
---     descricao_log TEXT,
---     vl_produto_log DECIMAL(10, 2) NOT NULL,
---     qntd_estoque_log INT NOT NULL,
---     id_categoria_log INT,
---     data_log DATE,
---     FOREIGN KEY (id_categoria_log) REFERENCES categoria(id_categoria)
+CREATE TABLE IF NOT EXISTS tabela_log (
+    id_log INT PRIMARY KEY AUTO_INCREMENT,
+    id_produto_log INT,
+    dc_produto_log VARCHAR(100) NOT NULL,
+    descricao_log TEXT,
+    vl_produto_log DECIMAL(10, 2) NOT NULL,
+    qntd_estoque_log INT NOT NULL,
+    id_categoria_log INT,
+    data_log TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
 
 
--- CREATE EVENT IF NOT EXISTS log_estoque
---     ON SCHEDULE EVERY 1 DAY
---     DO
-        
+CREATE EVENT IF NOT EXISTS log_estoque
+    ON SCHEDULE EVERY 1 DAY
+    DO
+        INSERT INTO tabela_log(id_produto_log ,dc_produto_log, descricao_log, vl_produto_log, qntd_estoque_log, id_categoria_log)
+        SELECT id_produto, dc_produto, descricao, vl_produto, qntd_estoque, id_categoria FROM produto;
+    
+
+SELECT * FROM tabela_log;
+SELECT * FROM produto;
 
 
-
+select * from categoria;
 -- -- add cargo com null primeiro para evitar erro de fk
 START TRANSACTION;
 INSERT INTO cargo (dc_cargo) VALUES
@@ -199,17 +205,18 @@ INSERT INTO telefone (telefone, id_user) VALUES
 
 
 -- Produtos - tem que vir antes para nao bugar
-INSERT INTO produto (dc_produto, descricao, vl_produto, qntd_estoque) VALUES
-('Notebook Gamer', 'Notebook potente', 5500.00, 10),
-('Smartphone Azul', 'Câmera alta resolução', 1500.00, 25),
-('Tablet DEF', 'Tablet leve', 1200.00, 15),
-('Monitor GHI', 'Monitor 4K', 2000.00, 8)
-('Computador Desktop', 'Computador para uso diário', 4500.00, 12),
-('Smartphone Preto', 'Câmera de alta qualidade', 1800.00, 30),
-('Tablet XYZ', 'Tablet com boa performance', 1300.00, 20),        
-('Monitor Full HD', 'Monitor com resolução Full HD', 2200.00, 10),
-('Headset Gamer', 'Headset com som surround', 800.00, 15),
-('Teclado Mecânico', 'Teclado com switches mecânicos', 600.00, 20);
+INSERT INTO produto (dc_produto, descricao, vl_produto, qntd_estoque, id_categoria) VALUES
+('Smartphone X1', 'Smartphone de última geração com câmera avançada', 5500.00, 50, 2),
+('Tablet Pro 10', 'Tablet profissional com tela de alta resolução', 1500.00, 30, 3),
+('Monitor UltraWide', 'Monitor ultrawide para produtividade e jogos', 2000.00, 20, 4),
+('Laptop Gamer Z', 'Laptop potente para jogos e tarefas intensivas', 9000.00, 15, 5),
+('Smartphone Y2', 'Smartphone com excelente custo-benefício', 1800.00, 40, 2),
+('Tablet Mini', 'Tablet compacto para uso diário', 1300.00, 25, 3),
+('Monitor 4K', 'Monitor com resolução 4K para profissionais', 2200.00, 10, 4),
+('Fone de Ouvido Bluetooth', 'Fone de ouvido sem fio com cancelamento de ruído', 800.00, 60, 6),
+('Teclado Mecânico RGB', 'Teclado mecânico com iluminação RGB personalizável', 600.00, 70, 7),
+('Mouse Gamer Avançado', 'Mouse gamer com alta precisão e botões programáveis', 300.00, 80, 7);
+
 
 -- Categorias e Fornecedores
 INSERT INTO categoria (dc_categoria) VALUES
