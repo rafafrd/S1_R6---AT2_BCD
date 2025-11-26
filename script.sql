@@ -90,11 +90,11 @@ INSERT INTO usuarios (nome, rua, numero, bairro, CEP, id_cargo) VALUES
 ('Eva Costa', 'Rua E', '202', 'Bairro V', '56789012', NULL), -- Cliente
 ('Fábio Lima', 'Rua F', '303', 'Bairro U', '67890123', 3); -- Caixa
 
--- SELECT nome,
---     COALESCE(dc_cargo,"Cliente") AS cargo
--- FROM usuarios
--- LEFT JOIN cargo 
--- ON usuarios.id_cargo = cargo.id_cargo;
+SELECT nome,
+    COALESCE(dc_cargo,"Cliente") AS cargo
+FROM usuarios
+LEFT JOIN cargo 
+ON usuarios.id_cargo = cargo.id_cargo;
 
 -- Telefones
 INSERT INTO telefone (telefone, id_user) VALUES
