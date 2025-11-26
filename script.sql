@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS tecmarket;
+-- CREATE DATABASE tecmarket;
 USE tecmarket;
 
 -- Tabela CARGO
@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS telefone (
     telefone VARCHAR(20) NOT NULL,
     id_user INT,
     FOREIGN KEY (id_user) REFERENCES usuarios(id_user)
+);
+
+-- Tabela CATEGORIA
+CREATE TABLE IF NOT EXISTS categoria (
+    id_categoria INT PRIMARY KEY AUTO_INCREMENT,
+    dc_categoria VARCHAR(100) NOT NULL
 );
 
 -- Tabela PEDIDO
@@ -56,12 +62,6 @@ CREATE TABLE IF NOT EXISTS itens_pedido (
     PRIMARY KEY (id_pedido, id_produto),
     FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido),
     FOREIGN KEY (id_produto) REFERENCES produto(id_produto)
-);
-
--- Tabela CATEGORIA
-CREATE TABLE IF NOT EXISTS categoria (
-    id_categoria INT PRIMARY KEY AUTO_INCREMENT,
-    dc_categoria VARCHAR(100) NOT NULL
 );
 
 -- Tabela FORNECEDOR
@@ -130,30 +130,34 @@ DELIMITER $$
     AFTER INSERT ON itens_pedido
     FOR EACH ROW
     BEGIN
-		SET qntd_estoque = qntd_estoque - NEW.qntd_produto;
+        UPDATE produto
+		SET qntd_estoque = qntd_estoque - NEW.qntd_produto
+        WHERE id_produto = NEW.id_produto;
     END $$
 DELIMITER ;
 
 -- 6 - Crie um evento (EVENT SCHEDULER) que gere diariamente uma tabela de log de estoque;
 
--- CREATE EVENT [IF NOT EXISTS] event_name
---     ON SCHEDULE schedule
---     [ON COMPLETION [NOT] PRESERVE]
---     [ENABLE | DISABLE | DISABLE ON SLAVE]
+-- CREATE TABLE IF NOT EXISTS tabela_log
+--     id_produto_log INT PRIMARY KEY AUTO_INCREMENT,
+--     dc_produto_log VARCHAR(100) NOT NULL,
+--     descricao_log TEXT,
+--     vl_produto_log DECIMAL(10, 2) NOT NULL,
+--     qntd_estoque_log INT NOT NULL,
+--     id_categoria_log INT,
+--     data_log DATE,
+--     FOREIGN KEY (id_categoria_log) REFERENCES categoria(id_categoria)
+
+
+-- CREATE EVENT IF NOT EXISTS log_estoque
+--     ON SCHEDULE EVERY 1 DAY
 --     DO
---         event_body;
+        
 
 
 
-
-
-
-
-
-
--- popular tabelas
-
--- add cargo com null primeiro para evitar erro de fk
+-- -- add cargo com null primeiro para evitar erro de fk
+START TRANSACTION;
 INSERT INTO cargo (dc_cargo) VALUES
 ('Atendente'), -- id 1
 ('Gerente'),   -- id 2
@@ -167,6 +171,11 @@ INSERT INTO usuarios (nome, rua, numero, bairro, CEP, id_cargo) VALUES
 ('Daniel Oliveira', 'Rua D', '101', 'Bairro W', '45678901', 2), -- Gerente
 ('Eva Costa', 'Rua E', '202', 'Bairro V', '56789012', NULL), -- Cliente
 ('Fábio Lima', 'Rua F', '303', 'Bairro U', '67890123', 3); -- Caixa
+('Ana Silva', 'Rua A', '123', 'Bairro X', '12345678', NULL), -- Cliente
+('Bruno Souza', 'Rua B', '456', 'Bairro Y', '23456789', NULL), -- Cliente
+('Carla Mendes', 'Rua C', '789', 'Bairro Z', '34567890', 1), -- Atendente
+('Daniel Oliveira', 'Rua D', '101', 'Bairro W', '45678901', 2), -- Gerente
+('Eva Costa', 'Rua E', '202', 'Bairro V', '56789012', NULL); -- Cliente
 
 SELECT nome,
     COALESCE(dc_cargo,"Cliente") AS cargo
@@ -181,27 +190,52 @@ INSERT INTO telefone (telefone, id_user) VALUES
 ('31965432109', 3),
 ('41954321098', 4),
 ('51943210987', 5);
+('11987654321', 6),
+('21976543210', 7),
+('31965432109', 8),
+('41954321098', 9),
+('51943210987', 10),
+('61932109876', 11);
+
 
 -- Produtos - tem que vir antes para nao bugar
 INSERT INTO produto (dc_produto, descricao, vl_produto, qntd_estoque) VALUES
-('Notebook Gamer', 'Notebook potente', 5500.00, 10),    -- id 1
-('Smartphone Azul', 'Câmera alta resolução', 1500.00, 25), -- id 2
-('Tablet DEF', 'Tablet leve', 1200.00, 15),           -- id 3
-('Monitor GHI', 'Monitor 4K', 2000.00, 8);            -- id 4
+('Notebook Gamer', 'Notebook potente', 5500.00, 10),
+('Smartphone Azul', 'Câmera alta resolução', 1500.00, 25),
+('Tablet DEF', 'Tablet leve', 1200.00, 15),
+('Monitor GHI', 'Monitor 4K', 2000.00, 8)
+('Computador Desktop', 'Computador para uso diário', 4500.00, 12),
+('Smartphone Preto', 'Câmera de alta qualidade', 1800.00, 30),
+('Tablet XYZ', 'Tablet com boa performance', 1300.00, 20),        
+('Monitor Full HD', 'Monitor com resolução Full HD', 2200.00, 10),
+('Headset Gamer', 'Headset com som surround', 800.00, 15),
+('Teclado Mecânico', 'Teclado com switches mecânicos', 600.00, 20);
 
 -- Categorias e Fornecedores
 INSERT INTO categoria (dc_categoria) VALUES
-('Eletrônicos'), ('Celulares'), ('Tablets'), ('Monitores');
+('Eletrônicos'), ('Celulares'), ('Tablets'), ('Monitores'),
+('Computadores'), ('Acessórios'), ('Periféricos'), ('Gadgets'),
+('Hardware'), ('Software');
 
 INSERT INTO fornecedor (dc_fornecedor, id_produto) VALUES
-('Tech Distributors Inc.', 1), ('Gadget World', 2), ('Tablet Suppliers Co.', 3), ('Display Masters Ltd.', 4);
+('Tech Distributors Inc.', 1), ('Gadget World', 2), ('Tablet Suppliers Co.', 3), ('Display Masters Ltd.', 4),
+('Computer Hub', 5), ('Mobile Solutions', 6), ('Tablet Experts', 7), ('Monitor Pros', 8),
+('Audio Gear Inc.', 9), ('Keyboard Kings', 10);
 
 -- Pedidos 
 INSERT INTO pedido (id_user, vl_total) VALUES
-(1, 12500.00), -- id 1
-(2, 1500.00),  -- id 2
-(1, 10000.00), -- id 3
-(3, 3000.00);  -- id 4
+(1, 12500.00),
+(2, 1500.00), 
+(1, 10000.00),
+(3, 3000.00); 
+(3, 12500.00),
+(4, 1500.00), 
+(1, 10000.00),
+(2, 3000.00),
+(5, 5000.00),
+(6, 7500.00),
+(7, 2000.00),
+(2, 4500.00); 
 
 -- associativa
 INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) VALUES
@@ -209,4 +243,12 @@ INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) 
 (2, 2, 1, 1500.00),
 (3, 1, 1, 5500.00),
 (3, 4, 1, 2000.00),
-(4, 3, 2, 2400.00);
+(5, 5, 2, 9000.00),
+(6, 6, 1, 1800.00),
+(7, 7, 3, 3900.00),
+(8, 8, 1, 2200.00),
+(9, 9, 5, 4000.00),
+(10, 10, 5, 3000.00),
+(11, 2, 3, 4500.00);
+COMMIT;
+
