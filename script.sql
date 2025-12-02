@@ -369,3 +369,13 @@ CALL ExibirEstoqueBaixo(20); -- Chame a procedure com o limite de 20
 
 
 -- 17 - Crie uma função para exibir o valor total de cada venda;   
+DELIMITER $$
+CREATE FUNCTION ExibirValorTotalVenda (
+    IN p_parametro INT -- O parâmetro de entrada deve ser declarado como IN
+)
+BEGIN
+    
+END $$
+
+
+-- 18 - Crie um VIEW com campos para fornecer um relatório gerencial de vendas, com clientes e fucnionários;
