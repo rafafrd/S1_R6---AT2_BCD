@@ -1,4 +1,4 @@
-DROP DATABASE IF EXISTS tecmarket; -- Adicionado para garantir limpeza ao re-rodar
+DROP DATABASE IF EXISTS tecmarket;
 CREATE DATABASE tecmarket;
 USE tecmarket;
 
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS pedido (
     dt_pedido TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     id_user INT,
     id_func INT,
-    vl_total DECIMAL(10, 2) NOT NULL,
+    vl_total DECIMAL(10, 2),
     FOREIGN KEY (id_user) REFERENCES usuarios(id_user),
     FOREIGN KEY (id_func) REFERENCES funcionarios(id_func)
 );
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS itens_pedido (
     id_pedido INT,
     id_produto INT,
     qntd_produto INT NOT NULL,
-    vl_item_produto DECIMAL(10, 2) NOT NULL,
+    vl_item_produto DECIMAL(10, 2),
     PRIMARY KEY (id_pedido, id_produto),
     FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido),
     FOREIGN KEY (id_produto) REFERENCES produto(id_produto)
@@ -129,6 +129,35 @@ BEGIN
 END $$
 DELIMITER ;
 
+SELECT CalcularValorTotalVenda(3); -- retornou soma
+-- Trigger para inserir o valor na itens_pedido
+DELIMITER $$
+
+CREATE TRIGGER trg_insere_valor_total_somaItens_before_insert
+BEFORE INSERT ON itens_pedido
+FOR EACH ROW
+BEGIN
+    DECLARE preco_unitario DECIMAL(10,2);
+    SELECT vl_produto INTO preco_unitario FROM produto WHERE id_produto = NEW.id_produto;
+    SET NEW.vl_item_produto = NEW.qntd_produto * preco_unitario;
+END $$
+
+DELIMITER ;
+
+-- Trigger para inserir o valor total no pedido
+DELIMITER $$
+
+CREATE TRIGGER trg_insere_valor_total_after_insert
+AFTER INSERT ON itens_pedido
+FOR EACH ROW
+BEGIN
+    UPDATE pedido
+	SET vl_total = CalcularValorTotalVenda(NEW.id_pedido)
+    WHERE id_pedido = NEW.id_pedido;
+END $$
+
+DELIMITER ;
+
 -- 4 - Crie um função para calcular o valor de desconto de um determinado produto (preço, percentual);
 DELIMITER $$
 CREATE FUNCTION CalcularDescontoProduto (
@@ -152,9 +181,7 @@ CREATE TRIGGER trg_atualiza_estoque
 AFTER INSERT ON itens_pedido
 FOR EACH ROW
 BEGIN
-    UPDATE produto
-    SET qntd_estoque = qntd_estoque - NEW.qntd_produto
-    WHERE id_produto = NEW.id_produto;
+    UPDATE produto SET qntd_estoque = qntd_estoque - NEW.qntd_produto WHERE id_produto = NEW.id_produto;
 END $$
 DELIMITER ;
 
@@ -260,33 +287,33 @@ INSERT INTO fornecedor (dc_fornecedor, id_produto) VALUES
 ('Tablet Experts', 7), ('Monitor Pros', 8), ('Audio Gear Inc.', 9), ('Keyboard Kings', 10);
 
 -- Pedidos 
-INSERT INTO pedido (id_user, vl_total, id_func) VALUES
-(1, 11000.00, 5),
-(2, 1500.00, 5),
-(3, 7500.00, 7),
-(4, 2000.00, 7),
-(5, 9000.00, 9),
-(6, 1800.00, 9),
-(7, 3900.00, 7),
-(8, 2200.00, 7),
-(9, 4000.00, 5),
-(10, 3000.00, 5),
-(11, 4500.00, 9);
+INSERT INTO pedido (id_user, id_func) VALUES
+(1, 5),
+(2, 5),
+(3, 7),
+(4, 7),
+(5, 9),
+(6, 9),
+(7, 7),
+(8, 7),
+(9, 5),
+(10, 5),
+(11, 9);
 
 
 -- Itens Pedido
-INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) VALUES
-(1, 1, 2, 11000.00),
-(2, 2, 1, 1500.00),
-(3, 1, 1, 5500.00),
-(3, 4, 1, 2000.00), 
-(5, 5, 2, 9000.00),
-(6, 6, 1, 1800.00),
-(7, 7, 3, 3900.00),
-(8, 8, 1, 2200.00),
-(9, 9, 5, 4000.00),
-(10, 10, 5, 3000.00),
-(11, 9, 3, 4500.00);
+INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto) VALUES
+(1, 1, 2),
+(2, 2, 1),
+(3, 1, 1),
+(3, 4, 1),
+(5, 5, 2),
+(6, 6, 1),
+(7, 7, 3),
+(8, 8, 1),
+(9, 9, 5),
+(10, 10,),
+(11, 9, 3);
 
 COMMIT;
 
@@ -350,32 +377,40 @@ GROUP BY f.nome;
 
 -- 16 - Crie uma função para exibir para exibir estoque baixo;
 DELIMITER $$
-CREATE PROCEDURE ExibirEstoqueBaixo (
-    IN p_limite INT -- O parâmetro de entrada deve ser declarado como IN
+CREATE FUNCTION ContarEstoqueBaixo (
+    p_limite INT
 )
+RETURNS INT
+DETERMINISTIC
 BEGIN
-    -- O SELECT é executado diretamente na procedure
-    SELECT 
-        dc_produto, 
-        qntd_estoque
-    FROM 
-        produto
-    WHERE 
-        qntd_estoque < p_limite;
+    DECLARE total_produtos INT;
+    SELECT COUNT(id_produto) INTO total_produtos
+    FROM produto
+    WHERE qntd_estoque < p_limite;
+    RETURN total_produtos;
 END $$
-
 DELIMITER ;
-CALL ExibirEstoqueBaixo(20); -- Chame a procedure com o limite de 20
 
+SELECT ContarEstoqueBaixo(40);
+CALL ExibirEstoqueBaixo(40);
+SHOW CREATE PROCEDURE ExibirEstoqueBaixo;
 
 -- 17 - Crie uma função para exibir o valor total de cada venda;   
-DELIMITER $$
-CREATE FUNCTION ExibirValorTotalVenda (
-    IN p_parametro INT -- O parâmetro de entrada deve ser declarado como IN
-)
-BEGIN
-    
-END $$
+-- faz trigger
 
 
 -- 18 - Crie um VIEW com campos para fornecer um relatório gerencial de vendas, com clientes e fucnionários;
+
+CREATE VIEW Relatorio_Gerencial_Vendas AS
+SELECT
+    p.dt_pedido AS Data_Pedido,
+    u.nome AS Cliente,
+    p.vl_total AS Valor_Total, 
+    f.nome AS Funcionario
+FROM pedido p
+JOIN funcionarios f 
+    ON f.id_func = p.id_func
+JOIN usuarios u 
+    ON p.id_user = u.id_user;
+
+select * from Relatorio_Gerencial_Vendas;
