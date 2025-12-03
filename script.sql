@@ -1,4 +1,4 @@
-DROP DATABASE IF EXISTS tecmarket;
+-- DROP DATABASE IF EXISTS tecmarket;
 CREATE DATABASE tecmarket;
 USE tecmarket;
 
@@ -312,7 +312,7 @@ INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto) VALUES
 (7, 7, 3),
 (8, 8, 1),
 (9, 9, 5),
-(10, 10,),
+(10, 10, 2),
 (11, 9, 3);
 
 COMMIT;
@@ -324,7 +324,7 @@ SELECT id_pedido, dt_pedido, u.nome FROM pedido p JOIN usuarios u ON p.id_user =
 INSERT INTO pedido (id_user, vl_total, id_func) VALUES (1, 600.00, 5);
 INSERT INTO itens_pedido (id_pedido, id_produto, qntd_produto, vl_item_produto) VALUES (13, 10, 2, 600.00);
 -- Checar se estoque do produto 10 caiu para 78
-SELECT * FROM produto
+SELECT * FROM produto;
 
 
 -- 9 - Crie uma consulta para exibir uma lista de produtos com a descrição de suas categorias;
@@ -363,7 +363,7 @@ SELECT p.dc_produto, p.descricao, p.vl_produto, p.qntd_estoque
 FROM produto AS p
 WHERE p.vl_produto > (
     SELECT AVG(vl_produto) FROM produto
-)
+);
 
 -- preciso q vc coloque ;
 -- 15 - Crie uma consulta para exibir funcionários com maior número de vendas;
